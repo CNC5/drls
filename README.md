@@ -1,9 +1,10 @@
 # Intro
 A minimalistic V2 Docker Registry client for local management
 
+**D**ocker **R**egistry **L**i**S**t
 # Demo
 ```
-❯❯❯ drls set-registry registry.example.com
+ ❯❯❯ drls set-registry registry.example.com
 Registry set to: registry.example.com
 ```
 ```
@@ -21,6 +22,18 @@ app/crawler/
   latest -> sha256:86d4c69499f6659b6c0d721075a7844f355aa00a422509539e0882b39246dd63
 ```
 ```
-❯❯❯ drls delete library/python 3.11
+ ❯❯❯ drls delete library/python 3.11
 Deleted library/python:3.11 (digest: sha256:6c19e87e80b457906d403e02f4a20244526774093b58a9a891f8b1aefd97621e)
+```
+# Setup on linux
+Copy drls to your preferred bin (`/bin`:`/usr/bin`...)
+```
+cp drls /usr/bin/drls
+```
+
+Create config directory
+```
+mkdir -p /etc/drls
+chown root:docker /etc/drls/
+chmod 770 /etc/drls/
 ```
