@@ -7,7 +7,7 @@ A minimalistic V2 Docker Registry client for local management
 Registry set to: registry.example.com
 ```
 ```
- ❯❯❯ drls list                                                                                                                                                                                          main 22:35
+ ❯❯❯ drls list
 Fetching catalog from registry.example.com...
 
 library/mongo/
@@ -21,6 +21,6 @@ app/crawler/
   latest -> sha256:86d4c69499f6659b6c0d721075a7844f355aa00a422509539e0882b39246dd63
 ```
 ```
-❯❯❯ drls delete library/python 3.11                                                                                                                                                                    main 22:35
+❯❯❯ drls delete library/python 3.11
 Deleted library/python:3.11 (digest: sha256:6c19e87e80b457906d403e02f4a20244526774093b58a9a891f8b1aefd97621e)
 ```
