@@ -1,7 +1,7 @@
 # Intro
 A minimalistic V2 Docker Registry client for local management
 
-**D**ocker **R**egistry **L**i**S**t
+DRLS - **D**ocker **R**egistry **L**i**S**t
 # Demo
 ```
  ❯❯❯ drls set-registry registry.example.com
