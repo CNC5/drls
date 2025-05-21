@@ -92,7 +92,8 @@ def delete_manifest(registry, repo, tag):
 
     try:
         headers = {'Accept': 'application/vnd.docker.distribution.manifest.v2+json'}
-        r = requests.get(f"{base_url}/{repo}/manifests/{tag}", headers=headers)
+        manifest_url = f"{base_url}/{repo}/manifests/{tag}"
+        r = requests.get(manifest_url, headers=headers)
         r.raise_for_status()
         digest = r.headers.get("Docker-Content-Digest")
     except Exception as e:
@@ -104,7 +105,8 @@ def delete_manifest(registry, repo, tag):
         return
 
     try:
-        r = requests.delete(f"{base_url}/{repo}/manifests/{digest}")
+        delete_url = f"{base_url}/{repo}/manifests/{digest}"
+        r = requests.delete(delete_url)
         if r.status_code == 202:
             print(f"Deleted {repo}:{tag} (digest: {digest})")
         else:
