@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+
+import requests
+import sys
+import os
+import json
+
+CONFIG_PATH = "/etc/drls/config.json"
+DEFAULT_REGISTRY = "registry.example.com"
+
+def get_registry():
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, 'r') as f:
+                config = json.load(f)
+                return config.get("registry", DEFAULT_REGISTRY)
+        except Exception as e:
+            print(f"Warning: failed to read config: {e}")
+    return DEFAULT_REGISTRY
+
+def set_registry(url):
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    try:
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump({"registry": url}, f)
+        print(f"Registry set to: {url}")
+    except PermissionError:
+        print("Permission denied: try running with sudo to modify /etc/drls/")
+        sys.exit(1)
+
+def parse_args():
+    import argparse
+    parser = argparse.ArgumentParser(description="Docker Registry listing and deletion tool")
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # list
+    list_parser = subparsers.add_parser("list", help="List all repositories and tags")
+    list_parser.add_argument("--registry", help="Override the registry URL")
+
+    # delete
+    del_parser = subparsers.add_parser("delete", help="Delete a tag from a repository")
+    del_parser.add_argument("repo", help="Repository name")
+    del_parser.add_argument("tag", help="Tag name")
+    del_parser.add_argument("--registry", help="Override the registry URL")
+
+    # set-registry
+    setreg_parser = subparsers.add_parser("set-registry", help="Set default registry")
+    setreg_parser.add_argument("url", help="Registry URL")
+
+    return parser.parse_args()
+
+def list_registry(registry):
+    base_url = f"https://{registry}/v2"
+    print(f"Fetching catalog from {registry}...\n")
+
+    try:
+        r = requests.get(f"{base_url}/_catalog")
+        r.raise_for_status()
+    except Exception as e:
+        print(f"Error fetching catalog: {e}")
+        return
+
+    repos = r.json().get("repositories", [])
+
+    for repo in repos:
+        print(f"{repo}/")
+        try:
+            r = requests.get(f"{base_url}/{repo}/tags/list")
+            r.raise_for_status()
+            tags = r.json().get("tags", [])
+        except:
+            print("  (failed to fetch tags)")
+            continue
+
+        if not tags:
+            print("  (no tags)")
+            continue
+
+        for tag in tags:
+            try:
+                headers = {'Accept': 'application/vnd.docker.distribution.manifest.v2+json'}
+                r = requests.get(f"{base_url}/{repo}/manifests/{tag}", headers=headers)
+                r.raise_for_status()
+                digest = r.headers.get("Docker-Content-Digest", "unknown")
+                print(f"  {tag} -> {digest}")
+            except:
+                print(f"  {tag} -> (failed to get digest)")
+
+def delete_manifest(registry, repo, tag):
+    base_url = f"https://{registry}/v2"
+
+    try:
+        headers = {'Accept': 'application/vnd.docker.distribution.manifest.v2+json'}
+        r = requests.get(f"{base_url}/{repo}/manifests/{tag}", headers=headers)
+        r.raise_for_status()
+        digest = r.headers.get("Docker-Content-Digest")
+    except Exception as e:
+        print(f"Failed to get manifest digest for {repo}:{tag} - {e}")
+        return
+
+    if not digest:
+        print("Digest not found in headers.")
+        return
+
+    try:
+        r = requests.delete(f"{base_url}/{repo}/manifests/{digest}")
+        if r.status_code == 202:
+            print(f"Deleted {repo}:{tag} (digest: {digest})")
+        else:
+            print(f"Failed to delete {repo}:{tag} -> HTTP {r.status_code}")
+            print(r.text)
+    except Exception as e:
+        print(f"Failed to delete manifest: {e}")
+
+def main():
+    args = parse_args()
+
+    if args.command == "set-registry":
+        set_registry(args.url)
+    else:
+        registry = args.registry or get_registry()
+        if args.command == "list":
+            list_registry(registry)
+        elif args.command == "delete":
+            delete_manifest(registry, args.repo, args.tag)
+
+if __name__ == "__main__":
+    main()
